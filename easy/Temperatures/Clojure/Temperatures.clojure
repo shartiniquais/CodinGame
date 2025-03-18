@@ -1,0 +1,24 @@
+#_{:clj-kondo/ignore [:namespace-name-mismatch]}
+(ns Solution
+  (:require [clojure.string :as str])
+  (:gen-class))
+
+(defn output [msg] (println msg) (flush))
+(defn debug [msg] (binding [*out* *err*] (println msg) (flush)))
+
+#_{:clj-kondo/ignore [:unused-binding]}
+(defn -main [& args]
+  (let [n (Integer/parseInt (read-line))]
+    (if (zero? n)
+      (output "0")
+      (let [values (mapv #(Integer/parseInt %) (str/split (read-line) #" "))
+            closest (reduce (fn [min-val v]
+                              (let [min-dist (Math/abs min-val)
+                                    v-dist (Math/abs v)]
+                                (cond
+                                  (< v-dist min-dist) v
+                                  (and (= v-dist min-dist) (> v min-val)) v
+                                  :else min-val)))
+                            (first values)
+                            (rest values))]
+        (output (str closest))))))
