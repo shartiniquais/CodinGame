@@ -15,7 +15,7 @@ int main()
     scanf("%d", &n);
 
     if (n != 0) {
-        int values[n];
+        int* values = (int*)malloc(n * sizeof(int));
 
         for (int i = 0; i < n; i++) {
             scanf("%d", &values[i]);
