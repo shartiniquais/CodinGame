@@ -24,7 +24,7 @@ while true; do
 
     # 2 integers: rotate power. rotate is the desired rotation angle (should be 0 for level 1), power is the desired thrust power (0 to 4).
 
-    if [ $vSpeed -lt -39 ]; then
+    if [ $vSpeed -lt -40 ]; then
         echo "0 4"
     else
         echo "0 0"

@@ -25,7 +25,7 @@ while True:
 
     # 2 integers: rotate power. rotate is the desired rotation angle (should be 0 for level 1), power is the desired thrust power (0 to 4).
 
-    if v_speed <= -33:
+    if v_speed <= -40:
         motor = 4
     else:
         motor = 0
