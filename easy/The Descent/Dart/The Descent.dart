@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 String readLineSync() {
   String? s = stdin.readLineSync();
