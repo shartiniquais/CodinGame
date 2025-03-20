@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "*.embeddedhtml": "html",
-        "Temperatures.C": "cpp"
-    },
-    "ocaml.sandbox": {
-        "kind": "global"
-    }
-}
