@@ -1,0 +1,31 @@
+(ns Solution
+  (:require [clojure.string :as str])
+  (:gen-class))
+
+(defn char-to-binary [c]
+  ; Converts a character to its 7-bit binary representation as a string.
+  (let [ascii (int c)]
+    (apply str (map #(if (bit-test ascii %) "1" "0") (reverse (range 7))))))
+
+(defn binary-to-unary [binary]
+  ; Converts a binary string to its unary representation.
+  (loop [bin binary
+         bnum nil
+         out []]
+    (if (empty? bin)
+      (str/join " " out)
+      (let [c (first bin)
+            rest-bin (rest bin)]
+        (if (not= c bnum)
+          (recur rest-bin
+                 c
+                 (conj out (if (= c \1) "0" "00") "0"))
+          (recur rest-bin
+                 bnum
+                 (update out (dec (count out)) #(str % "0"))))))))
+
+(defn -main [& args]
+  (let [msg (read-line)
+        binary (apply str (map char-to-binary msg))
+        unary (binary-to-unary binary)]
+    (println unary)))
