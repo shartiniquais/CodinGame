@@ -1,0 +1,154 @@
+(ns Player
+  (:require [clojure.string :as str])
+  (:gen-class))
+
+; Auto-generated code below aims at helping you parse
+; the standard input according to the problem statement.
+
+(defn output [msg] (println msg) (flush))
+(defn debug [msg] (binding [*out* *err*] (println msg) (flush)))
+
+; Function narrow_dimension:
+;   Updates the search interval in one dimension
+;   based on the feedback and the comparison between
+;   the previous position (x0 or y0) and the current position (x or y).
+;
+; Parameters:
+;   $1 : previous position on the axis (x0 or y0)
+;   $2 : current position on the axis (x or y)
+;   $3 : current lower bound (x_min or y_min)
+;   $4 : current upper bound (x_max or y_max)
+;   $5 : feedback ("WARMER", "COLDER", "SAME", "UNKNOWN")
+;
+; For SAME, if (x0+x) (or y0+y) is even, the bomb is
+; exactly in the middle.
+;
+; For WARMER/COLDER, we deduce which side of the interval to keep:
+;   - If x > x0 and WARMER, the bomb is to the right of the middle,
+;     so new_min = ((x0+x)/2) + 1.
+;   - If x > x0 and COLDER, the bomb is to the left, so new_max = (x0+x)/2 - (if even) or = (x0+x)/2 (if odd).
+;
+; The same reasoning applies for y.
+(defn narrow_dimension [prev current min_limit max_limit info]
+  (if (= info "SAME")
+    (let [sum (+ prev current)]
+      (if (zero? (mod sum 2))
+        (let [middle (quot sum 2)]
+          (str middle " " middle))
+        (str min_limit " " max_limit)))
+    (if (= info "WARMER")
+      (if (> current prev)
+        (let [sum (+ prev current)
+              new_lower (+ (quot sum 2) 1)]
+          (str (if (> new_lower min_limit) new_lower min_limit) " " max_limit))
+        (if (< current prev)
+          (let [sum (+ prev current)
+                new_upper (if (zero? (mod sum 2))
+                            (- (quot sum 2) 1)
+                            (quot sum 2))]
+            (str min_limit " " (if (< new_upper max_limit) new_upper max_limit)))
+          (str min_limit " " max_limit)))
+      (if (= info "COLDER")
+        (if (> current prev)
+          (let [sum (+ prev current)
+                new_upper (if (zero? (mod sum 2))
+                            (- (quot sum 2) 1)
+                            (quot sum 2))]
+            (str min_limit " " (if (< new_upper max_limit) new_upper max_limit)))
+          (if (< current prev)
+            (let [sum (+ prev current)
+                  new_lower (+ (quot sum 2) 1)]
+              (str (if (> new_lower min_limit) new_lower min_limit) " " max_limit))
+            (str min_limit " " max_limit)))
+        (str min_limit " " max_limit)))))
+
+; Function narrow:
+; Applies narrow_dimension on x as long as
+; the horizontal interval is not reduced to a single value,
+; then on y if x is already determined.
+(defn narrow [x0 y0 x y x_min x_max y_min y_max info]
+  (debug (str "narrow: x0=" x0 " y0=" y0 " x=" x " y=" y " x_min=" x_min " x_max=" x_max " y_min=" y_min " y_max=" y_max " info=" info))
+  (if (not= x_min x_max)
+    (let [new-x (narrow_dimension x0 x x_min x_max info)
+          parts (str/split new-x #" ")
+          new_x_min (Integer/parseInt (first parts))
+          new_x_max (Integer/parseInt (second parts))]
+      (let [x_min new_x_min
+            x_max new_x_max]
+        (debug (str "narrow: x_min=" x_min " x_max=" x_max " y_min=" y_min " y_max=" y_max))
+        (str x_min " " y_min " " x_max " " y_max)))
+    (if (not= y_min y_max)
+      (let [new-y (narrow_dimension y0 y y_min y_max info)
+            parts (str/split new-y #" ")
+            new_y_min (Integer/parseInt (first parts))
+            new_y_max (Integer/parseInt (second parts))]
+        (let [y_min new_y_min
+              y_max new_y_max]
+          (debug (str "narrow: x_min=" x_min " x_max=" x_max " y_min=" y_min " y_max=" y_max))
+          (str x_min " " y_min " " x_max " " y_max)))
+      (do
+        (debug (str "narrow: x_min=" x_min " x_max=" x_max " y_min=" y_min " y_max=" y_max))
+        (str x_min " " y_min " " x_max " " y_max)))))
+
+; Main function
+; Initializes the game parameters and performs a binary search first on the x-axis,
+; then on the y-axis when x is already determined.
+(defn -main [& args]
+  (let [[w h] (map #(Integer/parseInt %)
+                   (filter #(seq %)
+                           (str/split (read-line) #" ")))
+        N (Integer/parseInt (read-line))
+        [x0 y0] (map #(Integer/parseInt %)
+                     (filter #(seq %)
+                             (str/split (read-line) #" ")))]
+    (loop [x0 x0
+           y0 y0
+           x x0
+           y y0
+           x_min 0
+           x_max (dec w)
+           y_min 0
+           y_max (dec h)]
+      (let [; Read the feedback from the input.
+            info (read-line)
+            ; Update the bounds based on the info.
+            new_bounds (narrow x0 y0 x y x_min x_max y_min y_max info)
+            [new_x_min new_y_min new_x_max new_y_max] (map #(Integer/parseInt %)
+                                                           (str/split new_bounds #" "))]
+        (debug (str "narrow results: x_min=" new_x_min " y_min=" new_y_min " x_max=" new_x_max " y_max=" new_y_max))
+        (let [; Update previous positions.
+              new-x0 x
+              new-y0 y
+              ; Binary search on the x-axis.
+              [new-x new-y] (if (not= new_x_min new_x_max)
+                              (let [x_candidate (cond
+                                                  (and (= new-x0 0) (not= (+ new_x_max new_x_min 1) w))
+                                                  (- (quot (+ (* 3 new_x_min) new_x_max) 2) new-x0)
+                                                  (and (= new-x0 (dec w)) (not= (+ new_x_max new_x_min 1) w))
+                                                  (- (quot (+ new_x_min (* 3 new_x_max)) 2) new-x0)
+                                                  :else (- (+ new_x_min new_x_max) new-x0))
+                                    x_candidate (if (= x_candidate new-x0) (+ new-x0 1) x_candidate)
+                                    x_candidate (max 0 (min (dec w) x_candidate))]
+                                [x_candidate y])
+                              (do
+                                ; If x is fixed, ensure it matches x_min.
+                                (when (not= x new_x_min)
+                                  (let [x_fixed new_x_min]
+                                    (output (str x_fixed " " y))
+                                    (read-line)))
+                                ; Binary search on the y-axis.
+                                (let [new-x new_x_min
+                                      y_candidate (if (not= new_y_min new_y_max)
+                                                    (let [yc (cond
+                                                               (and (= new-y0 0) (not= (+ new_y_max new_y_min 1) h))
+                                                               (- (quot (+ (* 3 new_y_min) new_y_max) 2) new-y0)
+                                                               (and (= new-y0 (dec h)) (not= (+ new_y_max new_y_min 1) h))
+                                                               (- (quot (+ new_y_min (* 3 new_y_max)) 2) new-y0)
+                                                               :else (- (+ new_y_max new_y_min) new-y0))
+                                                          yc (if (= yc new-y0) (+ new-y0 1) yc)
+                                                          yc (max 0 (min (dec h) yc))]
+                                                      yc)
+                                                    new_y_min)]
+                                  [new-x y_candidate])))]
+          (output (str new-x " " new-y))
+          (recur new-x0 new-y0 new-x new-y new_x_min new_x_max new_y_min new_y_max))))))
