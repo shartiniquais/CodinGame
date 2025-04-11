@@ -1,0 +1,33 @@
+(ns Player
+  (:require [clojure.string :as str])
+  (:gen-class))
+
+; Auto-generated code below aims at helping you parse
+; the standard input according to the problem statement.
+
+(defn output [msg] (println msg) (flush))
+(defn debug [msg] (binding [*out* *err*] (println msg) (flush)))
+
+(defn -main [& args]
+  (let [[w h] (map #(Integer/parseInt %) (str/split (read-line) #" "))
+        _     (Integer/parseInt (read-line))
+        [x0 y0] (map #(Integer/parseInt %) (str/split (read-line) #" "))]
+
+    ; Initial bounds
+    (loop [left 0
+           right (dec w)
+           top 0
+           bottom (dec h)
+           x x0
+           y y0]
+      (let [bomb-dir (read-line)
+            ; Update bounds
+            top    (if (.contains bomb-dir "D") (inc y) (if (.contains bomb-dir "U") top top))
+            bottom (if (.contains bomb-dir "U") (dec y) (if (.contains bomb-dir "D") bottom bottom))
+            left   (if (.contains bomb-dir "R") (inc x) (if (.contains bomb-dir "L") left left))
+            right  (if (.contains bomb-dir "L") (dec x) (if (.contains bomb-dir "R") right right))
+            ; Compute new position
+            new-x (quot (+ left right) 2)
+            new-y (quot (+ top bottom) 2)]
+        (output (str new-x " " new-y))
+        (recur left right top bottom new-x new-y)))))
