@@ -1,0 +1,28 @@
+(ns Solution
+  (:require [clojure.string :as str])
+  (:gen-class))
+
+; Auto-generated code below aims at helping you parse
+; the standard input according to the problem statement.
+
+(defn output [msg] (println msg) (flush))
+(defn debug [msg] (binding [*out* *err*] (println msg) (flush)))
+
+(defn -main [& args]
+  (let [l (Integer/parseInt (read-line))
+        h (Integer/parseInt (read-line))
+        t (.toUpperCase (read-line))
+        ascii-art (vec (repeatedly h #(read-line)))
+        result (atom (vec (repeat h "")))]
+
+    (doseq [char (seq t)]
+      (let [idx (if (and (>= (int char) (int \A)) (<= (int char) (int \Z)))
+                  (- (int char) (int \A))
+                  26)]
+        (dotimes [i h]
+          (let [row (ascii-art i)
+                segment (subs row (* idx l) (* (inc idx) l))]
+            (swap! result update i str segment)))))
+
+    (doseq [line @result]
+      (output line))))
