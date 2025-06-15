@@ -85,6 +85,12 @@ while True:
 
     go_to = where_to_go(rows, (kr, kc), back)
 
+    if go_to is None:
+        # No path was found; in practice this should not happen.
+        # Staying in place is a safe fallback.
+        print("UP")
+        continue
+
     if go_to[0] > kr:
         print("DOWN")
     elif go_to[0] < kr:
