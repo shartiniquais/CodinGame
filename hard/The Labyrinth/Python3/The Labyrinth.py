@@ -1,6 +1,4 @@
-
 from collections import deque
-
 
 # checks if given coordinate is on map
 def is_on_map(v, rows, cols):
@@ -12,7 +10,6 @@ def is_on_map(v, rows, cols):
 def get_neighbours(vertex, rows, cols):
     vr, vc = vertex
     first_set = {(vr - 1, vc), (vr + 1, vc), (vr, vc - 1), (vr, vc + 1)}
-
     return {v for v in first_set if is_on_map(v, rows, cols)}
 
 # traces our first step from BFS path
@@ -57,9 +54,7 @@ def BFS(game_map, start, goal):
                 if game_map[n[0]][n[1]] == goal:
                     return first_step(parents, start, n)
         colour[u[0]][u[1]] = 2
-
     return None
-
 
 def where_to_go(game_map, start, back):
     if not back:
