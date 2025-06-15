@@ -1,17 +1,16 @@
+from collections import deque
 
-INFINITY = float('inf')
 # checks if given coordinate is on map
-def is_on_map(v):
-    if v[0] < 0 or v[0] >= r or v[1] < 0 or v[1] >= c:
+def is_on_map(v, rows, cols):
+    if v[0] < 0 or v[0] >= rows or v[1] < 0 or v[1] >= cols:
         return False
     return True
 
 # gives map field neighbours that are on map
-def get_neighbours(vertex):
+def get_neighbours(vertex, rows, cols):
     vr, vc = vertex
-    first_set = {(vr-1, vc), (vr+1, vc), (vr, vc-1), (vr, vc+1)}
-
-    return {v for v in first_set if is_on_map(v)}
+    first_set = {(vr - 1, vc), (vr + 1, vc), (vr, vc - 1), (vr, vc + 1)}
+    return {v for v in first_set if is_on_map(v, rows, cols)}
 
 # traces our first step from BFS path
 def first_step(parent, start, n):
@@ -24,48 +23,43 @@ def first_step(parent, start, n):
 def BFS(game_map, start, goal):
 
     # preparation
-    queue = []
+    queue = deque()
     colour = []
-    distance = []
     parents = []
-    for row in range(len(game_map)):
+    rows = len(game_map)
+    cols = len(game_map[0])
+    for row in range(rows):
         colour.append([])
-        distance.append([])
         parents.append([])
-        for collumn in range(len(game_map[row])):
+        for column in range(len(game_map[row])):
             colour[row].append(0)
-            distance[row].append(INFINITY)
             parents[row].append(None)
 
     colour[start[0]][start[1]] = 1
-    distance[start[0]][start[1]] = 0
 
     queue.append(start)
 
     # algorithm loop
-    while queue != []:
-        u = queue.pop(0)
+    while queue:
+        u = queue.popleft()
         forbidden_symbols = ['#']
         if goal == '?':
             forbidden_symbols.append('C')
-        neighbours = {x for x in get_neighbours(u) if game_map[x[0]][x[1]] not in forbidden_symbols}
+        neighbours = {x for x in get_neighbours(u, rows, cols) if game_map[x[0]][x[1]] not in forbidden_symbols}
         for n in neighbours:
             if colour[n[0]][n[1]] == 0:
                 colour[n[0]][n[1]] = 1
-                distance[n[0]][n[1]] = distance[u[0]][u[1]] + 1
                 parents[n[0]][n[1]] = u
                 queue.append(n)
                 if game_map[n[0]][n[1]] == goal:
                     return first_step(parents, start, n)
         colour[u[0]][u[1]] = 2
-
     return None
-
 
 def where_to_go(game_map, start, back):
     if not back:
         go_to = BFS(game_map, start, '?')
-        if go_to == None:
+        if go_to is None:
             return BFS(game_map, start, 'C')
         return go_to
     else:
@@ -83,9 +77,14 @@ while True:
 
     if rows[kr][kc] == 'C':
         back = True
-        alarm = a
 
     go_to = where_to_go(rows, (kr, kc), back)
+
+    if go_to is None:
+        # No path was found; in practice this should not happen.
+        # Staying in place is a safe fallback.
+        print("UP")
+        continue
 
     if go_to[0] > kr:
         print("DOWN")
