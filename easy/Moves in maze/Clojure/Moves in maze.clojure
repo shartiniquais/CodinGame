@@ -1,0 +1,79 @@
+(ns Solution
+  (:gen-class)
+  (:require [clojure.string :as str]))
+
+(def ^String MAP "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+(defn -main []
+  ;; Read w h
+  (let [[w h] (map #(Integer/parseInt %)
+                   (str/split (read-line) #"\s+"))
+        ;; Read grid & locate 'S'
+        grid (object-array h)
+        sx   (atom -1)
+        sy   (atom -1)]
+    (dotimes [y h]
+      (let [^String row (read-line)]
+        (aset grid y row)
+        (when (= -1 @sx)
+          (let [p (.indexOf row (int \S))]
+            (when (>= p 0)
+              (reset! sx p)
+              (reset! sy y))))))
+    ;; BFS setup
+    (let [total (* w h)
+          ^ints dist (int-array total)
+          _ (java.util.Arrays/fill dist -1)
+          ^ints q (int-array total)
+          ^ints dx (int-array [-1 1 0 0])
+          ^ints dy (int-array [0 0 -1 1])
+          start (int (+ (* @sy w) @sx))]
+      (aset-int dist start 0)
+      (aset-int q 0 start)
+
+      ;; BFS queue processed via head/tail indices (no modulo in hot path)
+      (loop [head 0, tail 1]
+        (if (< head tail)
+          (let [cur (aget q head)
+                y   (quot cur w)
+                x   (- cur (* y w))
+                nd  (inc (aget dist cur))
+                ;; expand neighbors; return new tail
+                tail'
+                (loop [k 0, t tail]
+                  (if (< k 4)
+                    (let [tx (+ x (aget dx k))
+                          nx (cond
+                               (< tx 0) (dec w)
+                               (= tx w) 0
+                               :else     tx)
+                          ty (+ y (aget dy k))
+                          ny (cond
+                               (< ty 0) (dec h)
+                               (= ty h) 0
+                               :else     ty)
+                          ^String row (aget grid ny)]
+                      (if (= \# (.charAt row nx))
+                        (recur (inc k) t)
+                        (let [ni (+ (* ny w) nx)]
+                          (if (not= -1 (aget dist ni))
+                            (recur (inc k) t)
+                            (do
+                              (aset-int dist ni nd)
+                              (aset-int q t ni)
+                              (recur (inc k) (inc t)))))))
+                    t))]
+            (recur (inc head) tail'))
+          ;; render
+          (do
+            (dotimes [yy h]
+              (let [^String row (aget grid yy)
+                    sb (StringBuilder. w)]
+                (dotimes [xx w]
+                  (let [c (.charAt row xx)]
+                    (if (= c \#)
+                      (.append sb \#)
+                      (let [d (aget dist (+ (* yy w) xx))]
+                        (.append sb (if (= d -1) \. (.charAt MAP d)))))))
+                (println (.toString sb))))
+            (flush)))))))
