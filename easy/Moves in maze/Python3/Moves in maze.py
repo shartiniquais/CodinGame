@@ -1,39 +1,102 @@
 import sys
-from collections import deque
 
 MAP = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-# Movement directions: up, down, left, right
-DIRS = [(-1,0),(1,0),(0,-1),(0,1)]
 
-w, h = map(int, sys.stdin.readline().split())
-# Read maze lines into a 2D list of characters (strip trailing newline)
-mz = [list(sys.stdin.readline().rstrip('\n')) for _ in range(h)]
-# Find the coordinates of the start position 'S'
-sx, sy = next((x, y) for y, row in enumerate(mz) for x, c in enumerate(row) if c == 'S')
+DIRS = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1]
+]
 
-# Distance grid initialized to -1 (unvisited)
-dist = [[-1] * w for _ in range(h)]
-dist[sy][sx] = 0  # Start position distance = 0
+# Read width and height
+line = sys.stdin.readline()
+parts = line.split()
+w = int(parts[0])
+h = int(parts[1])
 
-# BFS queue initialized with the start position
-q = deque([(sx, sy)])
+# Read maze
+mz = []
 
-# Perform BFS
-while q:
-    x, y = q.popleft()
-    d = dist[y][x] + 1  # Next cell's distance
-    for dx, dy in DIRS:
-        # Compute next position with wrapping (toroidal maze)
-        nx, ny = (x + dx) % w, (y + dy) % h
-        # Skip if wall or already visited
-        if mz[ny][nx] == '#' or dist[ny][nx] != -1:
-            continue
-        dist[ny][nx] = d
-        q.append((nx, ny))
-
-# Render the final maze with distances
 for y in range(h):
-    print(''.join(
-        '#' if mz[y][x] == '#' else '.' if dist[y][x] == -1 else MAP[dist[y][x]]
-        for x in range(w)
-    ))
+    line = sys.stdin.readline()
+    line = line.rstrip("\n")
+
+    row = []
+    for x in range(w):
+        row.append(line[x])
+
+    mz.append(row)
+
+# Find start position
+sx = 0
+sy = 0
+
+for y in range(h):
+    for x in range(w):
+        if mz[y][x] == "S":
+            sx = x
+            sy = y
+
+# Create distance grid
+dist = []
+
+for y in range(h):
+    row = []
+
+    for x in range(w):
+        row.append(-1)
+
+    dist.append(row)
+
+dist[sy][sx] = 0
+
+# Queue implementation without deque
+queue_x = []
+queue_y = []
+queue_start = 0
+
+queue_x.append(sx)
+queue_y.append(sy)
+
+# BFS
+while queue_start < len(queue_x):
+    x = queue_x[queue_start]
+    y = queue_y[queue_start]
+    queue_start = queue_start + 1
+
+    d = dist[y][x] + 1
+
+    for i in range(4):
+        dx = DIRS[i][0]
+        dy = DIRS[i][1]
+
+        nx = (x + dx) % w
+        ny = (y + dy) % h
+
+        if mz[ny][nx] == "#":
+            continue
+
+        if dist[ny][nx] != -1:
+            continue
+
+        dist[ny][nx] = d
+
+        queue_x.append(nx)
+        queue_y.append(ny)
+
+# Render result
+for y in range(h):
+    output = ""
+
+    for x in range(w):
+        if mz[y][x] == "#":
+            output = output + "#"
+        else:
+            if dist[y][x] == -1:
+                output = output + "."
+            else:
+                value = dist[y][x]
+                output = output + MAP[value]
+
+    print(output)
