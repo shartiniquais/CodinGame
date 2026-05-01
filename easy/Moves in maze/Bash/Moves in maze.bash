@@ -1,90 +1,77 @@
-read -r w h
-
 MAP="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-# Keep rows as strings for cheap access on render
-declare -a grid
-
-sx=-1; sy=-1
-
-# Read maze & locate 'S' on the fly
-for ((y=0; y<h; y++)); do
-    IFS= read -r row
-    grid[y]=$row
-    # find 'S' in this row once
-    if (( sx < 0 )); then
-        for ((x=0; x<w; x++)); do
-            # quick check without slicing full row repeatedly
-            # (substring is still needed to test the single char)
-            if [[ ${row:x:1} == "S" ]]; then
-                sx=$x; sy=$y
-                break
-            fi
-        done
-    fi
+DIRS=($(( -1 )) 0 1 0 0 $(( -1 )) 0 1)
+IFS= read -r line
+read -r -a parts <<< "${line}"
+w=$(( parts[0] ))
+h=$(( parts[1] ))
+mz=()
+for (( y=0; y<h; y++ )); do
+    IFS= read -r line
+    line="${line}"
+    row=()
+    for (( x=0; x<w; x++ )); do
+        row+=("${line:x:1}")
+    done
+    mz+=("${row[@]}")
 done
-
-# Distance grid initialized to -1
-declare -a dist
-total=$((w*h))
-for ((i=0; i<total; i++)); do dist[i]=-1; done
-start=$((sy*w + sx))
-dist[start]=0
-
-# Neighbor deltas
-dx=(-1 1 0 0)
-dy=(0 0 -1 1)
-
-# Single-index BFS queue
-declare -a q
-head=0; tail=0
-q[tail++]=$start
-
-# BFS
-while (( head < tail )); do
-    cur=${q[head++]}
-    y=$(( cur / w ))
-    x=$(( cur - y*w ))
-    nd=$(( dist[cur] + 1 ))
-
-    # 4 neighbors
-    for k in 0 1 2 3; do
-        nx=$(( (x + dx[k] + w) % w ))
-        ny=$(( (y + dy[k] + h) % h ))
-        ni=$(( ny*w + nx ))
-
-        # wall check: access char only once
-        # read from the row string directly
-        if [[ ${grid[ny]:nx:1} == "#" ]]; then
-            continue
+sx=0
+sy=0
+for (( y=0; y<h; y++ )); do
+    for (( x=0; x<w; x++ )); do
+        if [[ "${mz[$(( y * w + x ))]}" == "S" ]]; then
+            sx=${x}
+            sy=${y}
         fi
-        # visited?
-        if (( dist[ni] != -1 )); then
-            continue
-        fi
-
-        dist[ni]=$nd
-        q[tail++]=$ni
     done
 done
-
-# Render
-for ((y=0; y<h; y++)); do
-    row=${grid[y]}
-    line=""
-    for ((x=0; x<w; x++)); do
-        ch=${row:x:1}
-        if [[ $ch == "#" ]]; then
-            line+="#"
+dist=()
+for (( y=0; y<h; y++ )); do
+    row=()
+    for (( x=0; x<w; x++ )); do
+        row+=($(( -1 )))
+    done
+    dist+=("${row[@]}")
+done
+dist[$(( sy * w + sx ))]=0
+queue_x=()
+queue_y=()
+queue_start=0
+queue_x+=(${sx})
+queue_y+=(${sy})
+while (( queue_start < ${#queue_x[@]} )); do
+    x=${queue_x[queue_start]}
+    y=${queue_y[queue_start]}
+    queue_start=$(( ( queue_start + 1 ) ))
+    d=$(( ( dist[$(( y * w + x ))] + 1 ) ))
+    for (( i=0; i<4; i++ )); do
+        dx=${DIRS[$(( i * 2 + 0 ))]}
+        dy=${DIRS[$(( i * 2 + 1 ))]}
+        nx=$(( ( ( ( x + dx ) % w + w ) % w ) ))
+        ny=$(( ( ( ( y + dy ) % h + h ) % h ) ))
+        if [[ "${mz[$(( ny * w + nx ))]}" == "#" ]]; then
+            continue
+        fi
+        if [[ ${dist[$(( ny * w + nx ))]} != $(( -1 )) ]]; then
+            continue
+        fi
+        dist[$(( ny * w + nx ))]=${d}
+        queue_x+=(${nx})
+        queue_y+=(${ny})
+    done
+done
+for (( y=0; y<h; y++ )); do
+    output=""
+    for (( x=0; x<w; x++ )); do
+        if [[ "${mz[$(( y * w + x ))]}" == "#" ]]; then
+            output="${output}#"
         else
-            d=${dist[$((y*w + x))]}
-            if (( d == -1 )); then
-                line+="."
+            if [[ ${dist[$(( y * w + x ))]} == $(( -1 )) ]]; then
+                output="${output}."
             else
-                # distances >= length(MAP) will render empty; clamp if needed
-                line+="${MAP:d:1}"
+                value=${dist[$(( y * w + x ))]}
+                output="${output}${MAP:value:1}"
             fi
         fi
     done
-    echo "$line"
+    printf '%s\n' "${output}"
 done
