@@ -2,3 +2,4 @@
 .lsp/
 folderMaker.py
 .vscode/
+__pycache__/
